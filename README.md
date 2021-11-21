@@ -3,9 +3,12 @@ terminal-based game of black jack between a human player and a computer controll
 
 
 Embedded C Final Project
+
 Black-Jack Game (v1.2.0)
+
 Make a terminal-based game of black jack between a human player and a computer
 controlled dealer.
+
 Game parts definitions
 The game will use playing cards. Or simply a “Card” struct. Each card has four fields: suit,
 rank & next.
