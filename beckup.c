@@ -2,6 +2,7 @@
 #include<stdio.h>
 #include<string.h> 
 #include<stdint.h> 
+#include<time.h>
 
 #define SUIT_NUM 4
 #define RANK_NUM 13
@@ -31,11 +32,13 @@ int check_bet(int * bet,int * cash);
 int get_cards_value(Card **card_list);
 void free_list(Card **p_card_list);
 void print_hand(Card **p_card_list);
+int check_player_hand(Card **player_hand);
+void clean_hands(Card ** head_deck,Card **p_card_list);
 
 //MAIN
 int main()
 {
-    int i,j,position,cash=1000,bet,deck_count=52;
+    int i,j,position,cash=1000,bet,deck_count=52,game_over=0,phase=1,hit_stand;
     Card *head_deck=NULL;
     Card *node=NULL;
     Card *player_hand=NULL;
@@ -52,64 +55,123 @@ int main()
             init_card_list (&head_deck,i,j);
         }
     }
-    // betting phashe:
+    
     
     printf("~~~~~~~Wellcome to bleacjack game~~~~~~~~~\n");
-    printf(" you have : %d $\n ",cash);
-    printf("how much you want to bet? ");
-    scanf("%d",&bet);
-    while(check_bet(&bet,&cash)) //if the bet not correct it loop over again
-    {
-        printf("how much you want to bet? ");
-        scanf("%d",&bet);
-    }
-    printf("your cash is: %d \nyour bet is: %d\n\n",cash,bet);
-
-    // Initial Deal - phase 3
-
-    for (i=0;i<2;i++) // give to card to player and dealer
-    {
-        position= rand() % deck_count+1; //rand number in change number. in begin range 1...52, after one card out  1..51 
-        add_card(&head_deck,&player_hand,position); // add card to the player hand
-        deck_count--;
-        position= rand() % deck_count+1;
-        add_card(&head_deck,&dealer_hand,position);// add card to the dealer hand
-        deck_count--;
-    }
-
-    //print hands - phase 3  
-
-    //print dealer hand  
-    node=dealer_hand;
-    printf("dealer: ");
-    while (node->next != NULL)
-    {
-        printf("%s of  %s ,",RANK[node->rank-1],SUIT[node->suit]);
-        node=node->next;
-    }
-    printf(" ?????????");
-
-    printf("\n\n");
     
-    //print player hand  
-    printf("player: ");
-    print_hand(&player_hand);
-    printf("\n\n");
 
-    // blackjack case
-    if (get_cards_value(&player_hand)==21)
+    while (!game_over)
     {
-        printf("Black Jack!\n you get %d!",bet+bet/2);
-        cash+=bet+bet/2;
-        bet=0;
-        printf("cash now is: %d",cash);
-    }
+
+    switch (phase)
+    {    
+        case 1:  // phase 1- betting phashe:
+            
+            printf(" you have : %d $\n ",cash);
+            printf("how much you want to bet? ");
+            scanf("%d",&bet);
+            while(check_bet(&bet,&cash)) //if the bet not correct it loop over again
+            {
+                printf("how much you want to bet? ");
+                scanf("%d",&bet);
+            }
+            printf("your cash is: %d \nyour bet is: %d\n\n",cash,bet);
+
+            // Initial hands
+
+            for (i=0;i<2;i++) // give to card to player and dealer
+            {
+                position= rand() % deck_count+1; //rand number in change number. in begin range 1...52, after one card out  1..51 
+                add_card(&head_deck,&player_hand,position); // add card to the player hand
+                deck_count--;
+                position= rand() % deck_count+1;
+                add_card(&head_deck,&dealer_hand,position);// add card to the dealer hand
+                deck_count--;
+            }
+
+             
+
+            //print dealer hand  
+            node=dealer_hand;
+            printf("dealer: ");
+            while (node->next != NULL)
+            {
+                printf("%s of  %s ,",RANK[node->rank-1],SUIT[node->suit]);
+                node=node->next;
+            }
+            printf(" ?????????");
+
+            printf("\n\n");
+            
+            //print player hand  
+            printf("player: ");
+            print_hand(&player_hand);
+            printf("\n\n");
+
+
+            // blackjack case-player hand is 21,
+            if (get_cards_value(&player_hand)==21)
+            {
+                printf("Black Jack!\n you get %d!",bet+bet/2);
+                cash+=bet+bet/2;
+                bet=0;
+                printf("cash now is: %d",cash);
+                // phase =?? TODO
+                break;
+            }
+        case 2: // phase 2- hit or stand 
+
+            printf("Hit or Stand? for hit insert '1' stand insert '0'\n");
+            scanf("%d",&hit_stand);
+            if (hit_stand==1) //hit
+            {
+                position= rand() % deck_count+1; 
+                add_card(&head_deck,&player_hand,position); // add card to the player hand
+                deck_count--;
+                printf("your hand: ");
+                print_hand(&player_hand);  
+              //  phase=check_player_hand(&player_hand); //return 2 or 3;
+
+                if (get_cards_value(&player_hand)>21) phase = 3; 
+                else
+                {
+                    phase= 2 ;
+                    break;
+                }
+    
+            }
+// #TEST: card sum of doubke or more aces 
+            
+            
+        case 3: //lose bet phase
+
+            printf("you bust.\n");
+            bet=0;
+
+
+
+
+
+            clean_hands(&head_deck,&player_hand);
+            printf("\n\n");
+
+            printf("your hand: ");
+            print_hand(&player_hand);
+
+
+            game_over=1;
+            break;
+
+//        case 4: //win bet phase
+//        case 5: // tie bet phase
+
+
+    } //switch
+    
+    } //while game over
+
+    //printf("sum is: %d",get_cards_value(&player_hand));
    
-   // printf("sum is: %d",get_cards_value(&player_hand));
-    
-
-
-
    // print deck
    // node=head_deck;
    
@@ -278,6 +340,9 @@ int check_bet(int * bet,int * cash)
 void print_hand(Card **p_card_list)
 {
     Card *node=*p_card_list;
+    
+    if  (node==NULL) return; //list empty
+
     while (node->next != NULL)
     {
         printf("%s of  %s ,",RANK[node->rank-1],SUIT[node->suit]);
@@ -285,7 +350,29 @@ void print_hand(Card **p_card_list)
     }
     
 
-    printf("%s of  %s",RANK[node->rank-1],SUIT[node->suit]);
+    printf("%s of  %s\n",RANK[node->rank-1],SUIT[node->suit]);
     
     
+}
+
+int check_player_hand(Card **player_hand)
+
+{
+    int card_sum;
+    card_sum=get_cards_value(player_hand);
+    if (card_sum>21) return 3;
+    else 
+         return 2;
+    
+}
+
+void clean_hands(Card ** head_deck,Card **p_card_list)
+{
+    Card *temp_deck,*temp_dp;
+    temp_deck=*head_deck;
+
+    while (temp_deck->next != NULL) temp_deck=temp_deck->next; //find the last node
+    temp_deck->next=*p_card_list;
+    *p_card_list=NULL;
+
 }
